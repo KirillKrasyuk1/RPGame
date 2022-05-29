@@ -30,6 +30,13 @@ class Monster(Character):
             print(f'player has {target.HP} HP. Damage was {self.damage}')
             time.sleep(1)
 
+
+class RaidBoss(Monster):
+    def __init__(self, HP, damage, type, crit_chance, regen):
+        super().__init__(HP, damage, type)
+        self.crit_chance = crit_chance
+        self.regen = regen
+
 # Player class
 class Gamer(Character):
     def __init__(self, HP, damage, exp, levels, name, chance_to_escape, Class, money):
@@ -121,7 +128,7 @@ class Gamer(Character):
 def create_person():
     debug = True
     if debug == True:
-        player = Gamer(100, 250, 0, 0, 'Kirill', 4, '3', 100)
+        player = Gamer(100, 100, 0, 0, 'Kirill', 4, '3', 100)
         return player
     else:
         name = input("enter you name, traveler\n")
@@ -160,9 +167,10 @@ def create_person():
         return player
 
 # Gives a choice in a fight
-def fight_choice():
+def fight_choice(monster_type):
+     print(monster.HP, monster.damage, monster.type)
      choice = input('choose your next action\n 1 - run, 2 - fight\n')
-     if choice == '1':
+     if choice == '1' and monster_type != 'raid_boss':
         run = random.randint(0,4)
         player.chance_to_escape += run
         if player.chance_to_escape >= 7:
@@ -172,37 +180,76 @@ def fight_choice():
             print('escape failed.')
             monster.attack(player)
             monster.attack(player)
-            fight_choice()
+            fight_choice(monster_type)
      elif choice == '2':
          is_target_alive = player.attack(monster)
          if is_target_alive:
              time.sleep(0.5)
              monster.attack(player)
-             fight_choice()
+             fight_choice(monster_type)
+     else:
+        print('От босса невозможно убежать')
+        is_target_alive = player.attack(monster)
+        if is_target_alive:
+            time.sleep(0.5)
+            monster.attack(player)
+            fight_choice(monster_type)
 
+def go_to_merchant():
+    choice = input('choose your next action\n 1 - go to merchant, 2 - continue adventure\n')
+    costs = [10, 20, 40]
+    print(f'{player.money} - your money')
+    if choice == '1':
+        # print(f'{list(health_potions.keys())[0]}\t{list(health_potions.keys())[1]}\t{list(health_potions.keys())[2]}')
+        # print(f'{list(health_potions.values())[0]}\t{list(health_potions.values())[1]}\t{list(health_potions.values())[2]}')
+        # print(f'{costs[0]}\t{costs[1]}\t{costs[2]}')
+        print(f"{'good':<20} {'chars':<20} {'money':<20}")
+        for i in range(3):
+            print(f'{list(health_potions.keys())[i]:<20}{list(health_potions.values())[i]:<20}{costs[i]:<20}')
+
+
+def go_to_raid_boss(HP, damage, crit_chance, regen):
+    bosses = ['Скелетрона',"Эндер Дракона",'Судию Гундир']
+    boss = random.choice(bosses)
+    print(f'вы встретили {boss}')
+    monster = RaidBoss(HP, damage, 'raid_boss', crit_chance, regen)
+    fight_choice(monster.type)
 # Game
 
 print('There are legends about certain dungeons that can make anyone rich who enters them and gets out alive, but legends\n are legends, and there will always be a person who wants to refute them.\n You turn out to be such a person and go to these creepy dungeonsto refute the lies.')
 player = create_person()
 player.show_stats()
 weapon = ['sword',"bow","staff"]
+health_potions ={'low potion' : 15, 'medium potion' : 25, 'high potion': 50}
+counter = 0
+stage = 1
+is_allowed_to_go_to_merchant = True
 while True:
-        rnd = random.randint(0,1)
-        if rnd == 0:
-            print("you didn't meet anyone along the way.")
-            time.sleep(1)
-        if rnd == 1:
-            monster_chance = random.randint(0,2)
-            if monster_chance == 0:
-                print('You met an orc')
-                monster = Monster(100,15,'orc')
-                monster.show_stats()
-            if monster_chance == 1:
-                print('You met an goblin')
-                monster = Monster(70,20,'goblin')
-                monster.show_stats()
-            if monster_chance == 2:
-                print('You met the og')
-                monster = Monster(200,30,'og')
-                monster.show_stats()
-            fight_choice()
+    if is_allowed_to_go_to_merchant == True:
+        go_to_merchant()
+    if counter >= 2:
+        answer = input('вы хотите отправиться в комнатку с боссом?\n 1 -да 2 - нет\n')
+        if answer == "1":
+            go_to_raid_boss(500, 45, 20, 25)
+
+    rnd = random.randint(0,1)
+    if rnd == 0:
+        print("you didn't meet anyone along the way.")
+        is_allowed_to_go_to_merchant = False
+        time.sleep(1)
+    if rnd == 1:
+        monster_chance = random.randint(0,2)
+        if monster_chance == 0:
+            print('You met an orc')
+            monster = Monster(100,15,'orc')
+            monster.show_stats()
+        if monster_chance == 1:
+            print('You met an goblin')
+            monster = Monster(70,20,'goblin')
+            monster.show_stats()
+        if monster_chance == 2:
+            print('You met the og')
+            monster = Monster(200,30,'og')
+            monster.show_stats()
+        fight_choice(monster.type)
+    counter += 1
