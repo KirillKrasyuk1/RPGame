@@ -36,6 +36,22 @@ class RaidBoss(Monster):
         super().__init__(HP, damage, type)
         self.crit_chance = crit_chance
         self.regen = regen
+        self.FullHP = HP
+    def attack(self, target):
+        CritChance = random.randint(1, 10)
+        if CritChance == 10:
+            target.HP -= round(self.damage * 1.5)
+            print('Босс нанес вам крит. урон.')
+        else:
+            target.HP -= self.damage
+        if target.HP <= 0:
+            print('player is dead')
+            quit()
+        else:
+            print(f'player has {target.HP} HP. Damage was {self.damage}')
+            self.HP += self.FullHP * 0.01
+            print('Босс частично восстановил свое здоровье.')
+            time.sleep(1)
 
 # Player class
 class Gamer(Character):
@@ -128,7 +144,7 @@ class Gamer(Character):
 def create_person():
     debug = True
     if debug == True:
-        player = Gamer(100, 100, 0, 0, 'Kirill', 4, '3', 100)
+        player = Gamer(10000, 10, 0, 0, 'Kirill', 4, '3', 100)
         return player
     else:
         name = input("enter you name, traveler\n")
@@ -167,10 +183,10 @@ def create_person():
         return player
 
 # Gives a choice in a fight
-def fight_choice(monster_type):
-     print(monster.HP, monster.damage, monster.type)
-     choice = input('choose your next action\n 1 - run, 2 - fight\n')
-     if choice == '1' and monster_type != 'raid_boss':
+def fight_choice(monster):
+     print(monster.HP)
+     choice = input('choose your next action\n 1 - run, 2 - fight 3 - regen\n')
+     if choice == '1' and monster.type != 'raid_boss':
         run = random.randint(0,4)
         player.chance_to_escape += run
         if player.chance_to_escape >= 7:
@@ -180,32 +196,80 @@ def fight_choice(monster_type):
             print('escape failed.')
             monster.attack(player)
             monster.attack(player)
-            fight_choice(monster_type)
+            fight_choice(monster)
      elif choice == '2':
          is_target_alive = player.attack(monster)
          if is_target_alive:
              time.sleep(0.5)
              monster.attack(player)
-             fight_choice(monster_type)
+             fight_choice(monster)
+     elif choice == '3':
+         choice = input('Какое зелье вы хотите выпить? 1 - LHP 2 - MHP 3 - HHP')
+         if choice == '1' and players_health_potions['low potion'] >= 1:
+             player.HP += 20
+             players_health_potions['low potion'] -= 1
+         if choice == '2' and players_health_potions['medium potion'] >= 1:
+             player.HP += 35
+             players_health_potions['medium potion'] -= 1
+         if choice == '3' and players_health_potions['high potion'] >= 1:
+             player.HP += 60
+             players_health_potions['high potion'] -= 1
+         else:
+             print('У вас нет зелий данного типа.')
+         fight_choice(monster)
      else:
         print('От босса невозможно убежать')
         is_target_alive = player.attack(monster)
         if is_target_alive:
             time.sleep(0.5)
             monster.attack(player)
-            fight_choice(monster_type)
+            fight_choice(monster)
 
 def go_to_merchant():
     choice = input('choose your next action\n 1 - go to merchant, 2 - continue adventure\n')
     costs = [10, 20, 40]
-    print(f'{player.money} - your money')
     if choice == '1':
-        # print(f'{list(health_potions.keys())[0]}\t{list(health_potions.keys())[1]}\t{list(health_potions.keys())[2]}')
-        # print(f'{list(health_potions.values())[0]}\t{list(health_potions.values())[1]}\t{list(health_potions.values())[2]}')
-        # print(f'{costs[0]}\t{costs[1]}\t{costs[2]}')
-        print(f"{'good':<20} {'chars':<20} {'money':<20}")
-        for i in range(3):
-            print(f'{list(health_potions.keys())[i]:<20}{list(health_potions.values())[i]:<20}{costs[i]:<20}')
+        choice = input('что вы хотите сделать?\n 1 - купить 2 - продать')
+        if choice == '1':
+            while True:
+                print(f'{player.money} - your money')
+                print(f"{'Press number to buy':<30}{'good':<20} {'chars':<20} {'money':<20}{'amount':<20}")
+                for i in range(3):
+                    print(f'{i + 1:<30}{list(health_potions.keys())[i]:<22}{20 * (i + 1):<22}{costs[i]:<20}{list(health_potions.values())[i]:<20}')
+                print('нажмите 4 чтобы выйти')
+                choice = input('')
+                if choice == "1":
+                    if player.money >= costs[0] and health_potions['low potion'] >= 1:
+                        players_health_potions['low potion'] += 1
+                        player.money -= costs[0]
+                        health_potions['low potion'] -= 1
+                        print('покупка совершена успешно')
+                        #TODO добавить вывод осатльных хилок
+                        print(f'LHP - {players_health_potions["low potion"]}')
+                    else:
+                        print('Невозможно купить в данный момент')
+                if choice == "2":
+                    if player.money >= costs[1] and health_potions['medium potion'] >= 1:
+                        players_health_potions['medium potion'] += 1
+                        player.money -= costs[1]
+                        health_potions['medium potion'] -= 1
+                    else:
+                        print('Невозможно купить в данный момент')
+                if choice == "3":
+                    if player.money >= costs[2] and health_potions['high potion'] >= 1:
+                        players_health_potions['high potion'] += 1
+                        player.money -= costs[2]
+                        health_potions['high potion'] -= 1
+                    else:
+                        print('Невозможно купить в данный момент')
+                if choice == '4':
+                    break
+        if choice == '2':
+            choice = input('вы хотите продать свои вещи? 1 - да/ любая другая клавиша - нет')
+            if choice == '1':
+                player.money += len(player.backpack) * 30
+                print(f'вы получили {len(player.backpack) * 30}. Ваш капитал составляет {player.money}')
+
 
 
 def go_to_raid_boss(HP, damage, crit_chance, regen):
@@ -213,14 +277,15 @@ def go_to_raid_boss(HP, damage, crit_chance, regen):
     boss = random.choice(bosses)
     print(f'вы встретили {boss}')
     monster = RaidBoss(HP, damage, 'raid_boss', crit_chance, regen)
-    fight_choice(monster.type)
+    fight_choice(monster)
 # Game
 
 print('There are legends about certain dungeons that can make anyone rich who enters them and gets out alive, but legends\n are legends, and there will always be a person who wants to refute them.\n You turn out to be such a person and go to these creepy dungeonsto refute the lies.')
 player = create_person()
 player.show_stats()
 weapon = ['sword',"bow","staff"]
-health_potions ={'low potion' : 15, 'medium potion' : 25, 'high potion': 50}
+health_potions = {'low potion' : 15, 'medium potion' : 10, 'high potion': 5}
+players_health_potions = {'low potion' : 0, 'medium potion' : 0, 'high potion': 0}
 counter = 0
 stage = 1
 is_allowed_to_go_to_merchant = True
@@ -251,5 +316,6 @@ while True:
             print('You met the og')
             monster = Monster(200,30,'og')
             monster.show_stats()
-        fight_choice(monster.type)
+        fight_choice(monster)
+        #del monster
     counter += 1
